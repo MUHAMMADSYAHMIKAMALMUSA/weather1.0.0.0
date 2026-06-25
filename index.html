@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Premium Weather Dashboard</title>
+    <!-- Loading Chart.js via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
       :root {
@@ -98,12 +99,13 @@
     <div class="container">
       <header>
         <h1>KUALA LUMPUR Weather Dashboard</h1>
-        <p>Visual Analysis of Real-Time Weather Data & 7-Day Forecast</p>
+        <p>Visual Analysis of Real-Time Weather Data (Today's Hourly Timeline)</p>
       </header>
 
       <div id="loader" class="loading">Fetching latest weather data...</div>
 
       <div id="dashboard" style="display: none">
+        <!-- SECTION 1: CURRENT WEATHER INFO CARDS -->
         <div class="stats-grid">
           <div class="stat-card" style="border-top-color: #ef4444">
             <h3>Current Temperature</h3>
@@ -123,23 +125,27 @@
           </div>
         </div>
 
+        <!-- SECTION 2: SEPARATED CHARTS -->
         <div class="charts-grid">
+          <!-- Chart 1: Temperature -->
           <div class="chart-card">
-            <h3>Maximum Temperature Forecast (°C)</h3>
+            <h3>Today's Temperature Profile (°C)</h3>
             <div class="chart-container">
               <canvas id="tempChart"></canvas>
             </div>
           </div>
 
+          <!-- Chart 2: Humidity -->
           <div class="chart-card">
-            <h3>Maximum Humidity Trend (%)</h3>
+            <h3>Today's Humidity Trend (%)</h3>
             <div class="chart-container">
               <canvas id="humidityChart"></canvas>
             </div>
           </div>
 
+          <!-- Chart 3: Wind Speed -->
           <div class="chart-card" style="grid-column: span 1">
-            <h3>Maximum Wind Speed Forecast (km/h)</h3>
+            <h3>Today's Wind Speed Timeline (km/h)</h3>
             <div class="chart-container">
               <canvas id="windChart"></canvas>
             </div>
@@ -153,7 +159,8 @@
       const LATITUDE = 3.139;
       const LONGITUDE = 101.6869;
 
-      const API_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current_weather=true&daily=temperature_2m_max,relative_humidity_2m_max,windspeed_10m_max&timezone=Asia%2FKuala_Lumpur`;
+      // URL ditukar daripada 'daily' kepada 'hourly' untuk memaparkan data 24 jam HARI INI SAHAJA (forecast_days=1)
+      const API_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current_weather=true&hourly=temperature_2m,relative_humidity_2m,windspeed_10m&forecast_days=1&timezone=Asia%2FKuala_Lumpur`;
 
       let tempChartInstance = null;
       let humidityChartInstance = null;
@@ -167,21 +174,26 @@
           document.getElementById('loader').style.display = 'none';
           document.getElementById('dashboard').style.display = 'block';
 
+          // Paparan data semasa pada kad ringkasan
           document.getElementById('current-temp').innerText =
             `${data.current_weather.temperature} °C`;
           document.getElementById('current-wind').innerText =
             `${data.current_weather.windspeed} km/h`;
           document.getElementById('location-zone').innerText =
             data.timezone_abbreviation;
+          
+          // Mengambil bacaan kelembapan semasa daripada tatasusunan hourly
+          const currentHourIndex = new Date().getHours();
           document.getElementById('current-humidity').innerText =
-            `${data.daily.relative_humidity_2m_max[0]} %`;
+            `${data.hourly.relative_humidity_2m[currentHourIndex]} %`;
 
-          buildTemperatureChart(data.daily.time, data.daily.temperature_2m_max);
-          buildHumidityChart(
-            data.daily.time,
-            data.daily.relative_humidity_2m_max,
-          );
-          buildWindChart(data.daily.time, data.daily.windspeed_10m_max);
+          // Format waktu paksi-X daripada "2026-06-25T00:00" kepada "00:00" sahaja
+          const timeLabels = data.hourly.time.map(t => t.split('T')[1]);
+
+          // Bina atau kemas kini carta dengan garis masa 24 jam
+          buildTemperatureChart(timeLabels, data.hourly.temperature_2m);
+          buildHumidityChart(timeLabels, data.hourly.relative_humidity_2m);
+          buildWindChart(timeLabels, data.hourly.windspeed_10m);
         } catch (error) {
           console.error('Technical issue:', error);
           if (document.getElementById('dashboard').style.display === 'none') {
@@ -191,7 +203,7 @@
         }
       }
 
-      // Chart 1 Function: Temperature (Updated to Line Chart with custom Point Styling)
+      // Chart 1 Function: Temperature (Line dengan Point Styling kegemaran anda)
       function buildTemperatureChart(labels, tempData) {
         const ctx = document.getElementById('tempChart').getContext('2d');
         
@@ -201,23 +213,23 @@
           tempChartInstance.update();
         } else {
           tempChartInstance = new Chart(ctx, {
-            type: 'line', // Ditukar kepada line
+            type: 'line',
             data: {
               labels: labels,
               datasets: [
                 {
-                  label: 'Max Temp (°C)',
+                  label: 'Temperature (°C)',
                   data: tempData,
-                  borderColor: '#ff6384', // Warna garisan merah jambu/merah lembut berkilat
+                  borderColor: '#ff6384',
                   backgroundColor: 'rgba(255, 99, 132, 0.2)',
                   borderWidth: 3,
-                  tension: 0.1, // Kelukan garisan sedikit beralun
-                  pointStyle: 'circle', // Bentuk titik bulat seperti dalam gambar rujukan
-                  pointRadius: 10, // Besarkan saiz titik bulatan (radius)
-                  pointHoverRadius: 14, // Saiz titik apabila tetikus berada di atasnya
+                  tension: 0.3, 
+                  pointStyle: 'circle',
+                  pointRadius: 5, // Dikecilkan sedikit berbanding 10 supaya muat untuk garis masa 24 jam
+                  pointHoverRadius: 8,
                   pointBackgroundColor: '#ff6384',
                   pointBorderColor: 'rgba(255, 99, 132, 0.4)',
-                  pointBorderWidth: 5
+                  pointBorderWidth: 3
                 },
               ],
             },
@@ -226,6 +238,7 @@
         }
       }
 
+      // Chart 2 Function: Humidity 
       function buildHumidityChart(labels, humidityData) {
         const ctx = document.getElementById('humidityChart').getContext('2d');
         
@@ -247,6 +260,7 @@
                   fill: true,
                   tension: 0.4,
                   borderWidth: 3,
+                  pointRadius: 2
                 },
               ],
             },
@@ -255,6 +269,7 @@
         }
       }
 
+      // Chart 3 Function: Wind Speed
       function buildWindChart(labels, windData) {
         const ctx = document.getElementById('windChart').getContext('2d');
         
@@ -269,14 +284,13 @@
               labels: labels,
               datasets: [
                 {
-                  label: 'Max Wind Speed (km/h)',
+                  label: 'Wind Speed (km/h)',
                   data: windData,
                   borderColor: '#10b981',
                   backgroundColor: 'transparent',
                   borderWidth: 3,
-                  tension: 0,
-                  pointStyle: 'rectRot',
-                  pointRadius: 6,
+                  tension: 0.2,
+                  pointRadius: 2
                 },
               ],
             },
@@ -287,6 +301,7 @@
 
       fetchWeatherData();
 
+      // Semakan data baharu setiap 5 minit
       setInterval(() => {
         console.log('Fetching fresh live weather data...');
         fetchWeatherData();
