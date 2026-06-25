@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Premium Weather Dashboard</title>
-    <!-- Loading Chart.js via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
       :root {
@@ -105,7 +104,6 @@
       <div id="loader" class="loading">Fetching latest weather data...</div>
 
       <div id="dashboard" style="display: none">
-        <!-- SECTION 1: CURRENT WEATHER INFO CARDS -->
         <div class="stats-grid">
           <div class="stat-card" style="border-top-color: #ef4444">
             <h3>Current Temperature</h3>
@@ -125,9 +123,7 @@
           </div>
         </div>
 
-        <!-- SECTION 2: SEPARATED CHARTS -->
         <div class="charts-grid">
-          <!-- Chart 1: Temperature -->
           <div class="chart-card">
             <h3>Maximum Temperature Forecast (°C)</h3>
             <div class="chart-container">
@@ -135,7 +131,6 @@
             </div>
           </div>
 
-          <!-- Chart 2: Humidity -->
           <div class="chart-card">
             <h3>Maximum Humidity Trend (%)</h3>
             <div class="chart-container">
@@ -143,7 +138,6 @@
             </div>
           </div>
 
-          <!-- Chart 3: Wind Speed -->
           <div class="chart-card" style="grid-column: span 1">
             <h3>Maximum Wind Speed Forecast (km/h)</h3>
             <div class="chart-container">
@@ -159,10 +153,8 @@
       const LATITUDE = 3.139;
       const LONGITUDE = 101.6869;
 
-      // Requesting both daily forecast & current weather data from the API
       const API_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current_weather=true&daily=temperature_2m_max,relative_humidity_2m_max,windspeed_10m_max&timezone=Asia%2FKuala_Lumpur`;
 
-      // Global variables to store Chart instances
       let tempChartInstance = null;
       let humidityChartInstance = null;
       let windChartInstance = null;
@@ -175,18 +167,15 @@
           document.getElementById('loader').style.display = 'none';
           document.getElementById('dashboard').style.display = 'block';
 
-          // 1. Display data on the current summary cards
           document.getElementById('current-temp').innerText =
             `${data.current_weather.temperature} °C`;
           document.getElementById('current-wind').innerText =
             `${data.current_weather.windspeed} km/h`;
           document.getElementById('location-zone').innerText =
             data.timezone_abbreviation;
-          // Using the first day's humidity data as an estimate for current humidity
           document.getElementById('current-humidity').innerText =
             `${data.daily.relative_humidity_2m_max[0]} %`;
 
-          // 2. Build or Update the individual charts
           buildTemperatureChart(data.daily.time, data.daily.temperature_2m_max);
           buildHumidityChart(
             data.daily.time,
@@ -195,7 +184,6 @@
           buildWindChart(data.daily.time, data.daily.windspeed_10m_max);
         } catch (error) {
           console.error('Technical issue:', error);
-          // Only show error text if the dashboard hasn't loaded yet
           if (document.getElementById('dashboard').style.display === 'none') {
             document.getElementById('loader').innerText =
               'Failed to load the dashboard view.';
@@ -203,29 +191,33 @@
         }
       }
 
-      // Chart 1 Function: Temperature (Bar Chart)
+      // Chart 1 Function: Temperature (Updated to Line Chart with custom Point Styling)
       function buildTemperatureChart(labels, tempData) {
         const ctx = document.getElementById('tempChart').getContext('2d');
         
         if (tempChartInstance) {
-          // Update data smoothly if chart already exists
           tempChartInstance.data.labels = labels;
           tempChartInstance.data.datasets[0].data = tempData;
           tempChartInstance.update();
         } else {
-          // Create chart for the first time
           tempChartInstance = new Chart(ctx, {
-            type: 'bar',
+            type: 'line', // Ditukar kepada line
             data: {
               labels: labels,
               datasets: [
                 {
                   label: 'Max Temp (°C)',
                   data: tempData,
-                  backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                  borderColor: '#ef4444',
-                  borderWidth: 1,
-                  borderRadius: 6,
+                  borderColor: '#ff6384', // Warna garisan merah jambu/merah lembut berkilat
+                  backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                  borderWidth: 3,
+                  tension: 0.1, // Kelukan garisan sedikit beralun
+                  pointStyle: 'circle', // Bentuk titik bulat seperti dalam gambar rujukan
+                  pointRadius: 10, // Besarkan saiz titik bulatan (radius)
+                  pointHoverRadius: 14, // Saiz titik apabila tetikus berada di atasnya
+                  pointBackgroundColor: '#ff6384',
+                  pointBorderColor: 'rgba(255, 99, 132, 0.4)',
+                  pointBorderWidth: 5
                 },
               ],
             },
@@ -234,17 +226,14 @@
         }
       }
 
-      // Chart 2 Function: Humidity (Line Chart)
       function buildHumidityChart(labels, humidityData) {
         const ctx = document.getElementById('humidityChart').getContext('2d');
         
         if (humidityChartInstance) {
-          // Update data smoothly if chart already exists
           humidityChartInstance.data.labels = labels;
           humidityChartInstance.data.datasets[0].data = humidityData;
           humidityChartInstance.update();
         } else {
-          // Create chart for the first time
           humidityChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
@@ -266,17 +255,14 @@
         }
       }
 
-      // Chart 3 Function: Wind Speed (Line Chart)
       function buildWindChart(labels, windData) {
         const ctx = document.getElementById('windChart').getContext('2d');
         
         if (windChartInstance) {
-          // Update data smoothly if chart already exists
           windChartInstance.data.labels = labels;
           windChartInstance.data.datasets[0].data = windData;
           windChartInstance.update();
         } else {
-          // Create chart for the first time
           windChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
@@ -299,10 +285,8 @@
         }
       }
 
-      // Initial data fetch on page load
       fetchWeatherData();
 
-      // Auto-refresh the data every 5 minutes (300,000 milliseconds) without reloading the page
       setInterval(() => {
         console.log('Fetching fresh live weather data...');
         fetchWeatherData();
