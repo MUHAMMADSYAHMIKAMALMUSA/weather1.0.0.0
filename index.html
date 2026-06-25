@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Premium Weather Dashboard</title>
-    <!-- Loading Chart.js via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
       :root {
@@ -105,7 +104,6 @@
       <div id="loader" class="loading">Fetching latest weather data...</div>
 
       <div id="dashboard" style="display: none">
-        <!-- SECTION 1: CURRENT WEATHER INFO CARDS -->
         <div class="stats-grid">
           <div class="stat-card" style="border-top-color: #ef4444">
             <h3>Current Temperature</h3>
@@ -125,9 +123,7 @@
           </div>
         </div>
 
-        <!-- SECTION 2: SEPARATED CHARTS -->
         <div class="charts-grid">
-          <!-- Chart 1: Temperature -->
           <div class="chart-card">
             <h3>Today's Temperature Profile (°C)</h3>
             <div class="chart-container">
@@ -135,7 +131,6 @@
             </div>
           </div>
 
-          <!-- Chart 2: Humidity -->
           <div class="chart-card">
             <h3>Today's Humidity Trend (%)</h3>
             <div class="chart-container">
@@ -143,7 +138,6 @@
             </div>
           </div>
 
-          <!-- Chart 3: Wind Speed -->
           <div class="chart-card" style="grid-column: span 1">
             <h3>Today's Wind Speed Timeline (km/h)</h3>
             <div class="chart-container">
@@ -159,7 +153,6 @@
       const LATITUDE = 3.139;
       const LONGITUDE = 101.6869;
 
-      // URL ditukar daripada 'daily' kepada 'hourly' untuk memaparkan data 24 jam HARI INI SAHAJA (forecast_days=1)
       const API_URL = `https://api.open-meteo.com/v1/forecast?latitude=${LATITUDE}&longitude=${LONGITUDE}&current_weather=true&hourly=temperature_2m,relative_humidity_2m,windspeed_10m&forecast_days=1&timezone=Asia%2FKuala_Lumpur`;
 
       let tempChartInstance = null;
@@ -182,15 +175,14 @@
           document.getElementById('location-zone').innerText =
             data.timezone_abbreviation;
           
-          // Mengambil bacaan kelembapan semasa daripada tatasusunan hourly
           const currentHourIndex = new Date().getHours();
           document.getElementById('current-humidity').innerText =
             `${data.hourly.relative_humidity_2m[currentHourIndex]} %`;
 
-          // Format waktu paksi-X daripada "2026-06-25T00:00" kepada "00:00" sahaja
+          // Format waktu paksi-X menjadi "00:00" sahaja
           const timeLabels = data.hourly.time.map(t => t.split('T')[1]);
 
-          // Bina atau kemas kini carta dengan garis masa 24 jam
+          // Bina atau kemas kini carta
           buildTemperatureChart(timeLabels, data.hourly.temperature_2m);
           buildHumidityChart(timeLabels, data.hourly.relative_humidity_2m);
           buildWindChart(timeLabels, data.hourly.windspeed_10m);
@@ -203,7 +195,7 @@
         }
       }
 
-      // Chart 1 Function: Temperature (Line dengan Point Styling kegemaran anda)
+      // STYLE 1: Gradient Area Line Chart (Suhu)
       function buildTemperatureChart(labels, tempData) {
         const ctx = document.getElementById('tempChart').getContext('2d');
         
@@ -221,12 +213,13 @@
                   label: 'Temperature (°C)',
                   data: tempData,
                   borderColor: '#ff6384',
-                  backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                  backgroundColor: 'rgba(255, 99, 132, 0.2)', // Isian warna lembut di bawah garisan
+                  fill: true, // Mengaktifkan reka bentuk Area Chart
                   borderWidth: 3,
-                  tension: 0.3, 
+                  tension: 0.4, // Garisan beralun lembut
                   pointStyle: 'circle',
-                  pointRadius: 5, // Dikecilkan sedikit berbanding 10 supaya muat untuk garis masa 24 jam
-                  pointHoverRadius: 8,
+                  pointRadius: 6,
+                  pointHoverRadius: 9,
                   pointBackgroundColor: '#ff6384',
                   pointBorderColor: 'rgba(255, 99, 132, 0.4)',
                   pointBorderWidth: 3
@@ -238,7 +231,7 @@
         }
       }
 
-      // Chart 2 Function: Humidity 
+      // STYLE 2: Bar Chart Style (Kelembapan)
       function buildHumidityChart(labels, humidityData) {
         const ctx = document.getElementById('humidityChart').getContext('2d');
         
@@ -248,19 +241,17 @@
           humidityChartInstance.update();
         } else {
           humidityChartInstance = new Chart(ctx, {
-            type: 'line',
+            type: 'bar', // Ditukar sepenuhnya kepada graf Bar
             data: {
               labels: labels,
               datasets: [
                 {
                   label: 'Humidity (%)',
                   data: humidityData,
+                  backgroundColor: 'rgba(59, 130, 246, 0.6)', // Warna bar biru lutsinar
                   borderColor: '#3b82f6',
-                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                  fill: true,
-                  tension: 0.4,
-                  borderWidth: 3,
-                  pointRadius: 2
+                  borderWidth: 1.5,
+                  borderRadius: 4, // Membuatkan bucu atas bar sedikit bulat (aesthetic)
                 },
               ],
             },
@@ -269,7 +260,7 @@
         }
       }
 
-      // Chart 3 Function: Wind Speed
+      // STYLE 3: Stepped Line Chart Style (Kelajuan Angin)
       function buildWindChart(labels, windData) {
         const ctx = document.getElementById('windChart').getContext('2d');
         
@@ -289,8 +280,9 @@
                   borderColor: '#10b981',
                   backgroundColor: 'transparent',
                   borderWidth: 3,
-                  tension: 0.2,
-                  pointRadius: 2
+                  stepped: true, // MENUKARKAN KEPADA STEPPED LINE (Grafik Anak Tangga)
+                  pointRadius: 3,
+                  pointBackgroundColor: '#10b981'
                 },
               ],
             },
@@ -301,7 +293,7 @@
 
       fetchWeatherData();
 
-      // Semakan data baharu setiap 5 minit
+      // Semakan auto-refresh setiap 5 minit
       setInterval(() => {
         console.log('Fetching fresh live weather data...');
         fetchWeatherData();
